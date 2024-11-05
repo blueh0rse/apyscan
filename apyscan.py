@@ -3,9 +3,14 @@
 import argparse
 import requests
 from urllib.parse import urlparse
+import logging
 
 
 def main():
+    VERSION = "v0.3"
+    logger = create_logger()
+    logger.info("apyscan %s", VERSION)
+
     default_codes = [200, 201, 301]
 
     parser = argparse.ArgumentParser(description="Python API Tester")
@@ -54,6 +59,22 @@ def main():
         r = requests.get(url)
         if r.status_code in status_codes:
             print(f"{r.status_code} -> {url_param}={payload}")
+
+
+def create_logger():
+    logger = logging.getLogger(__name__)
+    logger.setLevel(10)
+    file_handler = logging.FileHandler("logs/app.log", mode="a", encoding="utf-8")
+    logger.addHandler(file_handler)
+
+    formatter = logging.Formatter(
+        "{asctime} - {levelname} - {message}",
+        style="{",
+        datefmt="%d-%m-%Y %H:%M",
+    )
+
+    file_handler.setFormatter(formatter)
+    return logger
 
 
 if __name__ == "__main__":

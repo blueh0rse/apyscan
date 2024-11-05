@@ -66,6 +66,10 @@ python3 apyscan.py -u https://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/test
 
 ## Changelog
 
+### v0.3
+
+- Add a logger sending logs to `logs/app.log` by default
+
 ### v0.2
 
 - `-c` to specify response status codes to look for
