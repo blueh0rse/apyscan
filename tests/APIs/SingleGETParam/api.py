@@ -1,29 +1,29 @@
-from flask import Flask
-from flask import jsonify
+from flask import Flask, request, jsonify
+
+app = Flask(__name__)
+
+users = [
+    {"id": 1, "name": "Alice"},
+    {"id": 9, "name": "Bob"},
+    {"id": 30, "name": "Charlie"},
+    {"id": 1000, "name": "David"},
+]
 
 
-def create_app():
-    app = Flask(__name__)
-    return app
+@app.route("/api/v1/users", methods=["GET"])
+def get_user():
+    user_id = request.args.get("id", type=int)
 
+    if user_id is None:
+        return jsonify({"error": "Missing 'id' parameter"}), 400
 
-app = create_app()
+    user = next((user for user in users if user["id"] == user_id), None)
 
-app.route("/api/v1/users", methods=["GET"])
-
-
-def get_users():
-    response = {"message": "success"}
-    return jsonify(response)
-
-
-app.route("/api/v1/users/<id>", methods=["GET"])
-
-
-def get_user(id):
-    response = {"message": "success"}
-    return jsonify(response)
+    if user:
+        return jsonify(user)
+    else:
+        return jsonify({"error": f"User with id {user_id} not found"}), 404
 
 
 if __name__ == "__main__":
-    app.run(debug=False)
+    app.run(debug=True, host="127.0.0.1", port=5000)
