@@ -66,6 +66,15 @@ python3 apyscan.py -u https://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/test
 
 ## Changelog
 
+### v0.4
+
+- Improved logger with dual handler (file + console) in a dedicated file
+- Added logging information
+- Test if target is reachable before fuzzing
+- Fuzzing stats: total requests, success, fails, code matching, elapsed time
+- Performance:
+  - 10,000 GET requests < 35s
+
 ### v0.3
 
 - Add a logger sending logs to `logs/app.log` by default

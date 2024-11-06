@@ -2,15 +2,16 @@
 
 import argparse
 import datetime
-import logging
 import requests
 import time
 from urllib.parse import urlparse
+from logger import create_logger
+
+logger = create_logger()
 
 
 def main():
-    VERSION = "v0.3"
-    logger = create_logger()
+    VERSION = "v0.4"
     logger.info("APYSCAN %s", VERSION)
 
     DEFAULT_CODES = [200, 201, 301]
@@ -30,21 +31,21 @@ def main():
 
     # check url
     target = args.url
-    print("[+] Target URL:", target)
+    logger.info("URL: %s", target)
 
     # check wordlist
     wordlist = args.wordlist
-    print("[+] Wordlist:", wordlist)
+    logger.info("Wordlist: %s", wordlist)
 
     # check status codes
-    print("[+] Codes:", args.codes)
+    logger.info("Codes: %s", args.codes)
 
     # parse target url
     parsed_target = urlparse(target)
 
     # extract parameter
     url_param = parsed_target.query.split("=")[0]
-    print("[*] Detected parameter:", url_param)
+    logger.info("Detected parameter: %s", url_param)
 
     # read wordlist
     line_count = 0
@@ -54,22 +55,24 @@ def main():
             while line := wordlist.readline():
                 payloads.append(line.rstrip())
                 line_count += 1
-        print("[*] Wordlist length:", line_count)
+        logger.info("Wordlist length: %s", line_count)
 
     # check if host is reachable
     try:
         response = requests.get(target, timeout=3)
         if response.status_code == 200:
-            print("[+] Host is online")
+            logger.info("Host is online")
         else:
-            print("[!] Host is reachable but returned status:", response.status_code)
+            logger.info(
+                "Host is reachable but returned status: %s", response.status_code
+            )
             return False
     except requests.exceptions.RequestException as err:
-        print("[!] Host is unreachable:", target)
+        logger.info("Host is unreachable: %s", target)
         return False
 
     # start fuzzing
-    print("[*] Starting fuzzing...")
+    logger.info("Starting fuzzing...")
     success = 0
     match = 0
     fail = 0
@@ -86,25 +89,10 @@ def main():
             fail += 1
     end = time.time()
     elapsed_time = str(datetime.timedelta(seconds=end - start))[:-3]
-    print("[-] Total:", line_count, "/ OK:", success, "/ NOK:", fail, "/ MATCH:", match)
-    print("[+] Fuzzing finished in", elapsed_time)
-
-
-def create_logger():
-    """Create logger with file handler and custom format"""
-    logger = logging.getLogger(__name__)
-    logger.setLevel(10)
-    file_handler = logging.FileHandler("logs/app.log", mode="a", encoding="utf-8")
-    logger.addHandler(file_handler)
-
-    formatter = logging.Formatter(
-        "{asctime} - {levelname} - {message}",
-        style="{",
-        datefmt="%d-%m-%Y %H:%M",
+    logger.info(
+        "Total: %s / OK: %s / NOK: %s / MATCH: %s", line_count, success, fail, match
     )
-
-    file_handler.setFormatter(formatter)
-    return logger
+    logger.info("Fuzzing finished in %s", elapsed_time)
 
 
 if __name__ == "__main__":
