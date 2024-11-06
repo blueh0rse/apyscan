@@ -49,9 +49,24 @@ def main():
     # read wordlist
     if args.wordlist:
         payloads = []
+        line_count = 0
         with open(args.wordlist, "r", encoding="UTF-8") as wordlist:
             while line := wordlist.readline():
                 payloads.append(line.rstrip())
+                line_count += 1
+        print("[*] Wordlist length:", line_count)
+
+    # check if host is reachable
+    try:
+        response = requests.get(target, timeout=3)
+        if response.status_code == 200:
+            print("[+] Host is online")
+        else:
+            print("[!] Host is reachable but returned status:", response.status_code)
+            return False
+    except requests.exceptions.RequestException as err:
+        print("[!] Host is unreachable:", target)
+        return False
 
     # start fuzzing
     for payload in payloads:
