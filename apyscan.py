@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 
 import argparse
+import datetime
 import logging
 import requests
+import time
 from urllib.parse import urlparse
 
 
@@ -45,9 +47,9 @@ def main():
     print("[*] Detected parameter:", url_param)
 
     # read wordlist
+    line_count = 0
     if args.wordlist:
         payloads = []
-        line_count = 0
         with open(args.wordlist, "r", encoding="UTF-8") as wordlist:
             while line := wordlist.readline():
                 payloads.append(line.rstrip())
@@ -67,11 +69,25 @@ def main():
         return False
 
     # start fuzzing
+    print("[*] Starting fuzzing...")
+    success = 0
+    match = 0
+    fail = 0
+    start = time.time()
     for payload in payloads:
-        url = target.split("?")[0] + "?" + url_param + "=" + payload
-        r = requests.get(url)
-        if r.status_code in args.codes:
-            print(f"{r.status_code} -> {url_param}={payload}")
+        try:
+            url = target.split("?")[0] + "?" + url_param + "=" + payload
+            r = requests.get(url)
+            if r.status_code in args.codes:
+                print(f"{r.status_code} -> {url_param}={payload}")
+                match += 1
+            success += 1
+        except:
+            fail += 1
+    end = time.time()
+    elapsed_time = str(datetime.timedelta(seconds=end - start))[:-3]
+    print("[-] Total:", line_count, "/ OK:", success, "/ NOK:", fail, "/ MATCH:", match)
+    print("[+] Fuzzing finished in", elapsed_time)
 
 
 def create_logger():
