@@ -11,7 +11,7 @@ def main():
     logger = create_logger()
     logger.info("apyscan %s", VERSION)
 
-    default_codes = [200, 201, 301]
+    DEFAULT_CODES = [200, 201, 301]
 
     parser = argparse.ArgumentParser(description="Python API Tester")
     parser.add_argument("-u", "--url", help="target url", required=True)
@@ -21,7 +21,7 @@ def main():
         "--codes",
         help="status codes to look for",
         type=int,
-        default=default_codes,
+        default=DEFAULT_CODES,
         nargs="+",
     )
     args = parser.parse_args()
@@ -35,9 +35,7 @@ def main():
     print("[+] Wordlist:", wordlist)
 
     # check status codes
-    status_codes = args.codes
-
-    print("[+] Codes:", status_codes)
+    print("[+] Codes:", args.codes)
 
     # parse target url
     parsed_target = urlparse(target)
@@ -72,7 +70,7 @@ def main():
     for payload in payloads:
         url = target.split("?")[0] + "?" + url_param + "=" + payload
         r = requests.get(url)
-        if r.status_code in status_codes:
+        if r.status_code in args.codes:
             print(f"{r.status_code} -> {url_param}={payload}")
 
 
