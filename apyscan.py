@@ -4,7 +4,6 @@ import argparse
 import logging
 import requests
 from urllib.parse import urlparse
-import logging
 
 
 def main():
