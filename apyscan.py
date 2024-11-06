@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import logging
 import requests
 from urllib.parse import urlparse
 import logging
@@ -9,7 +10,7 @@ import logging
 def main():
     VERSION = "v0.3"
     logger = create_logger()
-    logger.info("apyscan %s", VERSION)
+    logger.info("APYSCAN %s", VERSION)
 
     DEFAULT_CODES = [200, 201, 301]
 
@@ -75,6 +76,7 @@ def main():
 
 
 def create_logger():
+    """Create logger with file handler and custom format"""
     logger = logging.getLogger(__name__)
     logger.setLevel(10)
     file_handler = logging.FileHandler("logs/app.log", mode="a", encoding="utf-8")
