@@ -27,7 +27,7 @@ def create_logger():
 
 
 class CustomConsoleFormatter(logging.Formatter):
-    """Custom formatter to replace level names with specific symbols for console output."""
+    """Custom formatter to replace level names with specific symbols for console output"""
 
     LEVEL_TO_SYMBOL = {
         "INFO": "[+]",
