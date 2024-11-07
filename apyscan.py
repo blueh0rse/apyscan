@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 
+import re
 import argparse
 import datetime
+import sys
 import requests
 import time
 from urllib.parse import urlparse
@@ -11,34 +13,18 @@ logger = create_logger()
 
 
 def main():
-    VERSION = "v0.4"
+    VERSION = "v0.5"
     logger.info("APYSCAN %s", VERSION)
-
-    DEFAULT_CODES = [200, 201, 301]
 
     parser = argparse.ArgumentParser(description="Python API Tester")
     parser.add_argument("-u", "--url", help="target url", required=True)
     parser.add_argument("-w", "--wordlist", help="wordlist path", required=True)
-    parser.add_argument(
-        "-c",
-        "--codes",
-        help="status codes to look for",
-        type=int,
-        default=DEFAULT_CODES,
-        nargs="+",
-    )
+    parser.add_argument("-c", "--codes", help="status codes to look for")
     args = parser.parse_args()
 
-    # check url
-    target = args.url
-    logger.info("URL: %s", target)
-
-    # check wordlist
-    wordlist = args.wordlist
-    logger.info("Wordlist: %s", wordlist)
-
-    # check status codes
-    logger.info("Codes: %s", args.codes)
+    target = validate_argument("url", args.url)
+    wordlist = validate_argument("wordlist", args.wordlist)
+    codes = validate_argument("codes", args.codes)
 
     # parse target url
     parsed_target = urlparse(target)
@@ -81,7 +67,7 @@ def main():
         try:
             url = target.split("?")[0] + "?" + url_param + "=" + payload
             r = requests.get(url)
-            if r.status_code in args.codes:
+            if r.status_code in codes:
                 print(f"{r.status_code} -> {url_param}={payload}")
                 match += 1
             success += 1
@@ -93,6 +79,48 @@ def main():
         "Total: %s / OK: %s / NOK: %s / MATCH: %s", line_count, success, fail, match
     )
     logger.info("Fuzzing finished in %s", elapsed_time)
+
+
+def validate_argument(argmunent, value):
+    """Perform regex validation on arguments"""
+    logger.debug("Checking argument '%s' with value '%s'", argmunent, value)
+
+    success_message = f"{argmunent}: {value}"
+    error_message = f"For the argument '{argmunent}' this value is not valid: {value}"
+
+    match argmunent:
+        case "url":
+            url_regex = "^https?:\/\/(?:\d{1,3}(?:\.\d{1,3}){3}|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})(?::\d{1,5})?(\/[^\s]*)?$"
+
+            if not re.fullmatch(url_regex, value):
+                logger.error(error_message)
+                sys.exit(1)
+            else:
+                logger.info(success_message)
+                return value
+
+        case "wordlist":
+            file_path_regex = "^(?:[^\s\\/]+[\\/])*[^\s\\/]+\.[a-zA-Z0-9]+$"
+
+            if not re.fullmatch(file_path_regex, value):
+                logger.error(error_message)
+                sys.exit(1)
+            else:
+                logger.info(success_message)
+                return value
+
+        case "codes":
+            codes_regex = "^(\d{3})(,\d{3})*$"
+            if value is None:
+                value = [200, 201, 301]
+                logger.info("%s: %s", argmunent, value)
+                return value
+            elif not re.fullmatch(codes_regex, value):
+                logger.error(error_message)
+                sys.exit(1)
+            else:
+                logger.info(success_message)
+                return [int(code) for code in value.split(",")]
 
 
 if __name__ == "__main__":

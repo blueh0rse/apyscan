@@ -37,15 +37,15 @@ Usage:
 python3 apyscan.py [flags]
 
 Flags:
- -u, --url      string      The target url
- -w, --wordlist string      Path to the wordlist
- -c, --codes    ints        Status codes to look for (default: 200 201 301)
+ -u, --url       string    The target url
+ -w, --wordlist  string    Path to the wordlist
+ -c, --codes     string    Status codes to look for (default: 200,201,301)
 ```
 
 ### `-c`
 
 ```bash
-python3 apyscan.py -u <url> -w <wordlist> -c 200 301 403
+python3 apyscan.py -u <url> -w <wordlist> -c 200,301,403
 ```
 
 ## Testing APIs
@@ -61,10 +61,15 @@ python3 tests/APIs/SingleGETParam/api.py
 Run the tool
 
 ```bash
-python3 apyscan.py -u https://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/test.txt
+python3 apyscan.py -u https://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/ids/id1000.txt
 ```
 
 ## Changelog
+
+### v0.5
+
+- User input validation using regex via `validate_argument()` for 'url', 'wordlist' and 'codes' arguments
+- Modified the `-c` format from ints to string
 
 ### v0.4
 
