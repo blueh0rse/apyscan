@@ -22,12 +22,18 @@ Example:
 
 ```bash
 $ python3 apyscan.py -u http://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/ids/id10.txt
-[+] Target URL: http://127.0.0.1:5000/api/v1/users?id=1
-[+] Wordlist: wordlists/ids/id10.txt
-[+] Codes: [200, 201, 301]
-[*] Detected parameter: id
+[+] APYSCAN v0.5
+[+] url: http://127.0.0.1:5000/api/v1/users?id=1
+[+] wordlist: wordlists/ids/id10.txt
+[+] codes: [200, 201, 301]
+[+] Detected parameter: id
+[+] Wordlist length: 10
+[+] Host is online
+[+] Starting fuzzing...
 200 -> id=1
 200 -> id=9
+[+] Total: 10 / OK: 10 / NOK: 0 / MATCH: 2
+[+] Fuzzing finished in 0:00:00.050
 ```
 
 ## Options
@@ -55,13 +61,13 @@ python3 apyscan.py -u <url> -w <wordlist> -c 200,301,403
 Start the test API
 
 ```bash
-python3 tests/APIs/SingleGETParam/api.py
+python3 APIs/SingleGETParam/api.py
 ```
 
 Run the tool
 
 ```bash
-python3 apyscan.py -u https://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/ids/id1000.txt
+python3 apyscan.py -u http://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/ids/id1000.txt
 ```
 
 ## Changelog
@@ -78,7 +84,7 @@ python3 apyscan.py -u https://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/ids/
 - Test if target is reachable before fuzzing
 - Fuzzing stats: total requests, success, fails, code matching, elapsed time
 - Performance:
-  - 10,000 GET requests < 35s
+  - 10,000 GET requests **<35s**
 
 ### v0.3
 
