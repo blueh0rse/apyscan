@@ -81,14 +81,14 @@ def main():
     logger.info("Fuzzing finished in %s", elapsed_time)
 
 
-def validate_argument(argmunent, value):
+def validate_argument(argument, value):
     """Perform regex validation on arguments"""
-    logger.debug("Checking argument '%s' with value '%s'", argmunent, value)
+    logger.debug("Checking argument '%s' with value '%s'", argument, value)
 
-    success_message = f"{argmunent}: {value}"
-    error_message = f"For the argument '{argmunent}' this value is not valid: {value}"
+    success_message = f"{argument}: {value}"
+    error_message = f"For the argument '{argument}' this value is not valid: {value}"
 
-    match argmunent:
+    match argument:
         case "url":
             url_regex = "^https?:\/\/(?:\d{1,3}(?:\.\d{1,3}){3}|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})(?::\d{1,5})?(\/[^\s]*)?$"
 
@@ -113,7 +113,7 @@ def validate_argument(argmunent, value):
             codes_regex = "^(\d{3})(,\d{3})*$"
             if value is None:
                 value = [200, 201, 301]
-                logger.info("%s: %s", argmunent, value)
+                logger.info("%s: %s", argument, value)
                 return value
             elif not re.fullmatch(codes_regex, value):
                 logger.error(error_message)
