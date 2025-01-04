@@ -13,7 +13,7 @@ logger = create_logger()
 
 
 def main():
-    VERSION = "v0.5"
+    VERSION = "v0.6"
     logger.info("APYSCAN %s", VERSION)
 
     parser = argparse.ArgumentParser(description="Python API Tester")

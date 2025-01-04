@@ -72,6 +72,10 @@ python3 apyscan.py -u http://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/ids/i
 
 ## Changelog
 
+### v0.6
+
+- Unit tests under `tests/` using `pytest` for the `validate_argument()` function
+
 ### v0.5
 
 - User input validation using regex via `validate_argument()` for 'url', 'wordlist' and 'codes' arguments
