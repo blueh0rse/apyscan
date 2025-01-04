@@ -57,3 +57,19 @@ def test_validate_argument_codes_invalid():
 
 def test_validate_argument_codes_default():
     assert validate_argument("codes", None) == [200, 201, 301]
+
+
+def test_validate_argument_param_valid():
+    assert validate_argument("param", "id") == "id"
+    assert validate_argument("param", "user_id") == "user_id"
+    assert validate_argument("param", "param-1") == "param-1"
+    assert validate_argument("param", "") == ""
+
+
+def test_validate_argument_param_invalid():
+    with pytest.raises(SystemExit):
+        validate_argument("param", "id&name")
+    with pytest.raises(SystemExit):
+        validate_argument("param", "name@123")
+    with pytest.raises(SystemExit):
+        validate_argument("param", "key value")

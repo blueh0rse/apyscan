@@ -6,32 +6,29 @@ import datetime
 import sys
 import requests
 import time
-from urllib.parse import urlparse
+from urllib.parse import parse_qs, urlparse
 from logger import create_logger
 
 logger = create_logger()
 
 
 def main():
-    VERSION = "v0.6"
+    VERSION = "v0.7"
     logger.info("APYSCAN %s", VERSION)
 
     parser = argparse.ArgumentParser(description="Python API Tester")
     parser.add_argument("-u", "--url", help="target url", required=True)
     parser.add_argument("-w", "--wordlist", help="wordlist path", required=True)
     parser.add_argument("-c", "--codes", help="status codes to look for")
+    parser.add_argument("-p", "--param", help="parameter to fuzz")
     args = parser.parse_args()
 
     target = validate_argument("url", args.url)
     wordlist = validate_argument("wordlist", args.wordlist)
     codes = validate_argument("codes", args.codes)
+    param = validate_argument("param", args.param)
 
-    # parse target url
-    parsed_target = urlparse(target)
-
-    # extract parameter
-    url_param = parsed_target.query.split("=")[0]
-    logger.info("Detected parameter: %s", url_param)
+    url_param = extract_parameter(target, param)
 
     # read wordlist
     line_count = 0
@@ -121,6 +118,39 @@ def validate_argument(argument, value):
             else:
                 logger.info(success_message)
                 return [int(code) for code in value.split(",")]
+
+        case "param":
+            param_regex = "^[a-zA-Z0-9_-]*$"
+            if value is None:
+                return ""
+            elif not re.fullmatch(param_regex, value):
+                logger.error(error_message)
+                sys.exit(1)
+            else:
+                logger.info(success_message)
+                return value
+
+
+def extract_parameter(url, param):
+    parsed_target = urlparse(url)
+    query_params = parse_qs(parsed_target.query)
+    url_param = ""
+
+    if param:
+        if param in query_params:
+            url_param = param
+            logger.info("Found specified parameter: %s", url_param)
+        else:
+            logger.error("Parameter '%s' not found in URL: %s", param, url)
+            raise ValueError(f"Parameter '{param}' not found in the URL.")
+    else:
+        if query_params:
+            url_param = list(query_params.keys())[0]
+            logger.info("Detected parameter: %s", url_param)
+        else:
+            logger.error("No parameter found for url: %s", url)
+            raise ValueError("No query parameter found in the URL")
+    return url_param
 
 
 if __name__ == "__main__":

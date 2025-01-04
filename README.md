@@ -1,6 +1,12 @@
 # APYSCAN
 
-Another Python API Scanner
+Another Python API
+
+## Quick Run
+
+```bash
+python3 apyscan.py -u "http://127.0.0.1:80/api?id=123" -w wordlists/ids/id100.txt
+```
 
 ## Setup
 
@@ -46,12 +52,39 @@ Flags:
  -u, --url       string    The target url
  -w, --wordlist  string    Path to the wordlist
  -c, --codes     string    Status codes to look for (default: 200,201,301)
+ -p, --param     string    Parameter to select
 ```
 
 ### `-c`
 
+Some examples of `-c`:
+
+```bash
+python3 apyscan.py -u <url> -w <wordlist> -c 200
+```
+
 ```bash
 python3 apyscan.py -u <url> -w <wordlist> -c 200,301,403
+```
+
+### `-p`
+
+Some examples of `-p`:
+
+```bash
+python3 apyscan.py -u <url> -w <wordlist> -p id
+```
+
+```bash
+python3 apyscan.py -u <url> -w <wordlist> -p test
+```
+
+## Tests
+
+To run the tests use:
+
+```bash
+pytest [-v]
 ```
 
 ## Testing APIs
@@ -71,6 +104,17 @@ python3 apyscan.py -u http://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/ids/i
 ```
 
 ## Changelog
+
+### v0.7
+
+- New argument `-p` to specify the url parameter to fuzz
+  - if not specified takes the first parameter detected
+  - added user input verification via regex
+  - added test cases into `tests/test_validate_argument.py`
+- Moved parameter detection into dedicated function
+  - Added test cases into `tests/test_extract_parameter.py`
+- Updated readme according to changes
+- Updated `.gitignore`
 
 ### v0.6
 
