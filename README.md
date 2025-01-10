@@ -105,6 +105,10 @@ python3 apyscan.py -u http://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/ids/i
 
 ## Changelog
 
+### v0.8
+
+- New function `validate_wordlist()` to ensure file exists and is readable
+
 ### v0.7
 
 - New argument `-p` to specify the url parameter to fuzz

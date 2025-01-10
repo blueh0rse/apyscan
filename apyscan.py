@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+from pathlib import Path
 import re
 import argparse
 import datetime
@@ -13,7 +14,7 @@ logger = create_logger()
 
 
 def main():
-    VERSION = "v0.7"
+    VERSION = "v0.8"
     logger.info("APYSCAN %s", VERSION)
 
     parser = argparse.ArgumentParser(description="Python API Tester")
@@ -23,8 +24,10 @@ def main():
     parser.add_argument("-p", "--param", help="parameter to fuzz")
     args = parser.parse_args()
 
+    # check argument's value
     target = validate_argument("url", args.url)
     wordlist = validate_argument("wordlist", args.wordlist)
+    validate_wordlist(wordlist)
     codes = validate_argument("codes", args.codes)
     param = validate_argument("param", args.param)
 
@@ -152,6 +155,20 @@ def extract_parameter(url, param):
             raise ValueError("No query parameter found in the URL")
     return url_param
 
+def validate_wordlist(wordlist):
+    logger.debug("Validating provided wordlist: %s", wordlist)
+    user_file = Path(wordlist)
+    if user_file.is_file():
+        logger.debug("File exists!")
+        logger.debug("Is it readable?")
+        try:
+            with open(user_file) as temp:
+                logger.debug("It is readable!")
+        except Exception as err:
+            logger.error("Unexpected error occured: %s", err)
+    else:
+        logger.error("File not found!")
+        raise FileNotFoundError
 
 if __name__ == "__main__":
     main()
