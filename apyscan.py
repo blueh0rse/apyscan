@@ -30,7 +30,7 @@ logger = create_logger()
 
 
 async def main():
-    VERSION = "v0.10"
+    VERSION = "v0.11"
     logger.info("APYSCAN %s", VERSION)
 
     parser = argparse.ArgumentParser(description="Python API Tester")
@@ -43,7 +43,7 @@ async def main():
     )
     args = parser.parse_args()
 
-    # check argument's value
+    # check arguments values
     target = validate_argument("url", args.url)
     wordlist = validate_argument("wordlist", args.wordlist)
     validate_wordlist(wordlist)
@@ -54,7 +54,6 @@ async def main():
     url_param = extract_parameter(target, param)
 
     if is_host_reachable(target):
-        logger.info("Starting fuzzing...")
         responses = await fuzz(target, wordlist, url_param, limit)
     else:
         raise httpx.ConnectError("Host seems to be offline. Exiting.")
@@ -101,14 +100,14 @@ def extract_parameter(url, param):
     if param:
         if param in query_params:
             url_param = param
-            logger.info("Found specified parameter: %s", url_param)
+            logger.debug("Found specified parameter: %s", url_param)
         else:
             logger.error("Parameter '%s' not found in URL: %s", param, url)
             raise ValueError(f"Parameter '{param}' not found in the URL.")
     else:
         if query_params:
             url_param = list(query_params.keys())[0]
-            logger.info("Detected parameter: %s", url_param)
+            logger.debug("Detected parameter: %s", url_param)
         else:
             logger.error("No parameter found for url: %s", url)
             raise ValueError("No query parameter found in the URL")
@@ -135,17 +134,18 @@ def is_host_reachable(target):
     try:
         res = requests.get(target, timeout=3)
         if res.status_code == 200:
-            logger.info("Host is online !")
+            logger.debug("Host is online !")
             return True
         else:
-            logger.info("Host is reachable but returned status: %s", res.status_code)
+            logger.warning("Host is reachable but returned status: %s", res.status_code)
             return False
     except requests.exceptions.RequestException as err:
-        logger.info("Host is unreachable: %s", target)
+        logger.error("Host is unreachable: %s", target)
         return False
 
 
 async def fuzz(url, wordlist, param, limit):
+    logger.warning("Starting...")
     start = time.time()
     results = {}
     semaphore = asyncio.Semaphore(limit)
@@ -153,7 +153,7 @@ async def fuzz(url, wordlist, param, limit):
         limits=httpx.Limits(max_connections=limit, max_keepalive_connections=20)
     ) as client:
         tasks = {}
-        logger.info("Opening wordlist...")
+        logger.debug("Opening wordlist...")
         with open(wordlist) as wordlist:
             for line in wordlist:
                 payload = line.strip()
@@ -169,13 +169,13 @@ async def fuzz(url, wordlist, param, limit):
                     send_request(semaphore, client, target)
                 )
 
-        logger.info("Gathering responses...")
+        logger.debug("Gathering responses...")
         responses = await asyncio.gather(*tasks.values())
 
         for target, response in zip(tasks.keys(), responses):
             results[target] = response.status_code
 
-        logger.info("Got all responses!")
+        logger.debug("Got all responses!")
 
     end = time.time()
     elapsed_time = str(datetime.timedelta(seconds=end - start))[:-3]
