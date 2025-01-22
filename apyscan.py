@@ -9,14 +9,14 @@ import sys
 import httpx
 import requests
 import time
-from urllib.parse import parse_qs, urlparse
+from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 from logger import create_logger
 
 logger = create_logger()
 
 
 async def main():
-    VERSION = "v0.9"
+    VERSION = "v0.9.1"
     logger.info("APYSCAN %s", VERSION)
 
     parser = argparse.ArgumentParser(description="Python API Tester")
@@ -166,8 +166,7 @@ async def fuzz(url, wordlist, param):
                 if not payload:
                     continue
 
-                # TODO: fix this
-                target = url.split("?")[0] + "?" + param + "=" + payload
+                target = generate_target(url, param, payload)
                 results[target] = None
 
                 tasks[target] = asyncio.create_task(
@@ -185,7 +184,7 @@ async def fuzz(url, wordlist, param):
     end = time.time()
     elapsed_time = str(datetime.timedelta(seconds=end - start))[:-3]
     logger.info("Fuzzing finished in %s", elapsed_time)
-    
+
     return results
 
 
@@ -201,6 +200,20 @@ def display_result(responses, codes):
     for url, res_code in responses.items():
         if res_code in codes:
             logger.info("%s -> %s", url, res_code)
+
+
+def generate_target(url, param, payload):
+    parsed_url = urlparse(url)
+    query_params = parse_qs(parsed_url.query)
+
+    if param in query_params:
+        query_params[param] = payload
+    else:
+        logger.warning("Parameter '%s' not found in the URL, adding it.", param)
+        query_params[param] = payload
+
+    new_query = urlencode(query_params, doseq=True)
+    return urlunparse(parsed_url._replace(query=new_query))
 
 
 if __name__ == "__main__":
