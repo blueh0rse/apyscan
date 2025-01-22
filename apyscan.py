@@ -12,11 +12,25 @@ import time
 from urllib.parse import parse_qs, urlencode, urlparse, urlunparse
 from logger import create_logger
 
+# regex definition
+URL_REGEX = r"^https?:\/\/(?:\d{1,3}(?:\.\d{1,3}){3}|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})(?::\d{1,5})?(\/[^\s]*)?$"
+FILE_PATH_REGEX = r"^(?:[^\s\\/]+[\\/])*[^\s\\/]+\.[a-zA-Z0-9]+$"
+CODES_REGEX = r"^(\d{3})(,\d{3})*$"
+PARAM_REGEX = r"^[a-zA-Z0-9_-]*$"
+LIMIT_REGEX = r"^(?:[1-9][0-9]{0,5}|1000000)$"
+
+# arguments default values
+DEFAULT_VALUES = {
+    "codes": [200, 201, 301],
+    "limit": 100,
+    "param": "",
+}
+
 logger = create_logger()
 
 
 async def main():
-    VERSION = "v0.9.1"
+    VERSION = "v0.10"
     logger.info("APYSCAN %s", VERSION)
 
     parser = argparse.ArgumentParser(description="Python API Tester")
@@ -24,6 +38,9 @@ async def main():
     parser.add_argument("-w", "--wordlist", help="wordlist path", required=True)
     parser.add_argument("-c", "--codes", help="status codes to look for")
     parser.add_argument("-p", "--param", help="parameter to fuzz")
+    parser.add_argument(
+        "-l", "--limit", help="max number of concurrent requests allowed", type=int
+    )
     args = parser.parse_args()
 
     # check argument's value
@@ -32,12 +49,13 @@ async def main():
     validate_wordlist(wordlist)
     codes = validate_argument("codes", args.codes)
     param = validate_argument("param", args.param)
+    limit = validate_argument("limit", args.limit)
 
     url_param = extract_parameter(target, param)
 
     if is_host_reachable(target):
         logger.info("Starting fuzzing...")
-        responses = await fuzz(target, wordlist, url_param)
+        responses = await fuzz(target, wordlist, url_param, limit)
     else:
         raise httpx.ConnectError("Host seems to be offline. Exiting.")
 
@@ -48,53 +66,31 @@ def validate_argument(argument, value):
     """Perform regex validation on arguments"""
     logger.debug("Checking argument '%s' with value '%s'", argument, value)
 
-    success_message = f"{argument}: {value}"
-    error_message = f"For the argument '{argument}' this value is not valid: {value}"
+    regex_map = {
+        "url": URL_REGEX,
+        "wordlist": FILE_PATH_REGEX,
+        "codes": CODES_REGEX,
+        "param": PARAM_REGEX,
+        "limit": LIMIT_REGEX,
+    }
 
-    match argument:
-        case "url":
-            url_regex = "^https?:\/\/(?:\d{1,3}(?:\.\d{1,3}){3}|(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,})(?::\d{1,5})?(\/[^\s]*)?$"
+    if argument in DEFAULT_VALUES and (value is None or value == ""):
+        value = DEFAULT_VALUES[argument]
+        logger.info("%s: %s", argument, value)
+        return value
 
-            if not re.fullmatch(url_regex, value):
-                logger.error(error_message)
-                sys.exit(1)
-            else:
-                logger.info(success_message)
-                return value
+    if argument in regex_map:
+        if not re.fullmatch(regex_map[argument], str(value)):
+            logger.error(
+                "For the argument '%s', this value is not valid: %s", argument, value
+            )
+            sys.exit(1)
+        logger.info("%s: %s", argument, value)
 
-        case "wordlist":
-            file_path_regex = "^(?:[^\s\\/]+[\\/])*[^\s\\/]+\.[a-zA-Z0-9]+$"
+    if argument == "codes":
+        return [int(code) for code in value.split(",")]
 
-            if not re.fullmatch(file_path_regex, value):
-                logger.error(error_message)
-                sys.exit(1)
-            else:
-                logger.info(success_message)
-                return value
-
-        case "codes":
-            codes_regex = "^(\d{3})(,\d{3})*$"
-            if value is None:
-                value = [200, 201, 301]
-                logger.info("%s: %s", argument, value)
-                return value
-            elif not re.fullmatch(codes_regex, value):
-                logger.error(error_message)
-                sys.exit(1)
-            else:
-                logger.info(success_message)
-                return [int(code) for code in value.split(",")]
-
-        case "param":
-            param_regex = "^[a-zA-Z0-9_-]*$"
-            if value is None:
-                return ""
-            elif not re.fullmatch(param_regex, value):
-                logger.error(error_message)
-                sys.exit(1)
-            else:
-                logger.info(success_message)
-                return value
+    return value
 
 
 def extract_parameter(url, param):
@@ -149,12 +145,12 @@ def is_host_reachable(target):
         return False
 
 
-async def fuzz(url, wordlist, param):
+async def fuzz(url, wordlist, param, limit):
     start = time.time()
     results = {}
-    semaphore = asyncio.Semaphore(200)
+    semaphore = asyncio.Semaphore(limit)
     async with httpx.AsyncClient(
-        limits=httpx.Limits(max_connections=200, max_keepalive_connections=20)
+        limits=httpx.Limits(max_connections=limit, max_keepalive_connections=20)
     ) as client:
         tasks = {}
         logger.info("Opening wordlist...")

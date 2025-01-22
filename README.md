@@ -1,6 +1,6 @@
 # APYSCAN
 
-Another Python API
+Another Python API fuzzer
 
 ## Quick Run
 
@@ -46,13 +46,14 @@ $ python3 apyscan.py -u http://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/ids
 
 ```text
 Usage:
-python3 apyscan.py [flags]
+python3 apyscan.py -u <url> -w <file> [flags]
 
 Flags:
  -u, --url       string    The target url
  -w, --wordlist  string    Path to the wordlist
  -c, --codes     string    Status codes to look for (default: 200,201,301)
  -p, --param     string    Parameter to select
+ -l, --limit     int       Limit the max number of requests in the pool (default: 100 / min: 1 / max: 1000000)
 ```
 
 ### `-c`
@@ -104,6 +105,12 @@ python3 apyscan.py -u http://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/ids/i
 ```
 
 ## Changelog
+
+## v0.10
+
+- New argument `-l` to limit the number of concurent requests (default 100)
+- Added const for regex validation and default values
+  - Refactored `validate_argument()`
 
 ### v0.9.1
 
