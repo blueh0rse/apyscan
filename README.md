@@ -106,6 +106,10 @@ python3 apyscan.py -u http://127.0.0.1:5000/api/v1/users?id=1 -w wordlists/ids/i
 
 ## Changelog
 
+## v0.11.1
+
+- Updated tests in `test_validate_argument.py` for the limit argument
+
 ## v0.11
 
 - Improved output and logs

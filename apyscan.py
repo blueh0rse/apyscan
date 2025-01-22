@@ -30,7 +30,7 @@ logger = create_logger()
 
 
 async def main():
-    VERSION = "v0.11"
+    VERSION = "v0.11.1"
     logger.info("APYSCAN %s", VERSION)
 
     parser = argparse.ArgumentParser(description="Python API Tester")

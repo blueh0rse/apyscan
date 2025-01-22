@@ -73,3 +73,17 @@ def test_validate_argument_param_invalid():
         validate_argument("param", "name@123")
     with pytest.raises(SystemExit):
         validate_argument("param", "key value")
+
+
+def test_validate_argument_limit_valid():
+    valid_limits = [1, 100, 999999, 1000000]
+    for limit in valid_limits:
+        result = validate_argument("limit", limit)
+        assert result == limit, f"Expected {limit}, got {result}"
+
+
+def test_validate_argument_limit_invalid():
+    invalid_limits = [0, -1, 1000001, "abc", 1.5, [], {}]
+    for limit in invalid_limits:
+        with pytest.raises(SystemExit):
+            validate_argument("limit", limit)
