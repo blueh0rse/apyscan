@@ -4,3 +4,5 @@ requests
 pytests
 # apis
 flask
+httpx
+asyncio

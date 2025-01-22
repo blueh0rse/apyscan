@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
 
+import asyncio
 from pathlib import Path
 import re
 import argparse
 import datetime
 import sys
+import httpx
 import requests
 import time
 from urllib.parse import parse_qs, urlparse
@@ -13,8 +15,8 @@ from logger import create_logger
 logger = create_logger()
 
 
-def main():
-    VERSION = "v0.8"
+async def main():
+    VERSION = "v0.9"
     logger.info("APYSCAN %s", VERSION)
 
     parser = argparse.ArgumentParser(description="Python API Tester")
@@ -33,52 +35,13 @@ def main():
 
     url_param = extract_parameter(target, param)
 
-    # read wordlist
-    line_count = 0
-    if args.wordlist:
-        payloads = []
-        with open(args.wordlist, "r", encoding="UTF-8") as wordlist:
-            while line := wordlist.readline():
-                payloads.append(line.rstrip())
-                line_count += 1
-        logger.info("Wordlist length: %s", line_count)
+    if is_host_reachable(target):
+        logger.info("Starting fuzzing...")
+        responses = await fuzz(target, wordlist, url_param)
+    else:
+        raise httpx.ConnectError("Host seems to be offline. Exiting.")
 
-    # check if host is reachable
-    try:
-        response = requests.get(target, timeout=3)
-        if response.status_code == 200:
-            logger.info("Host is online")
-        else:
-            logger.info(
-                "Host is reachable but returned status: %s", response.status_code
-            )
-            return False
-    except requests.exceptions.RequestException as err:
-        logger.info("Host is unreachable: %s", target)
-        return False
-
-    # start fuzzing
-    logger.info("Starting fuzzing...")
-    success = 0
-    match = 0
-    fail = 0
-    start = time.time()
-    for payload in payloads:
-        try:
-            url = target.split("?")[0] + "?" + url_param + "=" + payload
-            r = requests.get(url)
-            if r.status_code in codes:
-                print(f"{r.status_code} -> {url_param}={payload}")
-                match += 1
-            success += 1
-        except:
-            fail += 1
-    end = time.time()
-    elapsed_time = str(datetime.timedelta(seconds=end - start))[:-3]
-    logger.info(
-        "Total: %s / OK: %s / NOK: %s / MATCH: %s", line_count, success, fail, match
-    )
-    logger.info("Fuzzing finished in %s", elapsed_time)
+    display_result(responses, codes)
 
 
 def validate_argument(argument, value):
@@ -155,6 +118,7 @@ def extract_parameter(url, param):
             raise ValueError("No query parameter found in the URL")
     return url_param
 
+
 def validate_wordlist(wordlist):
     logger.debug("Validating provided wordlist: %s", wordlist)
     user_file = Path(wordlist)
@@ -170,5 +134,74 @@ def validate_wordlist(wordlist):
         logger.error("File not found!")
         raise FileNotFoundError
 
+
+def is_host_reachable(target):
+    try:
+        res = requests.get(target, timeout=3)
+        if res.status_code == 200:
+            logger.info("Host is online !")
+            return True
+        else:
+            logger.info("Host is reachable but returned status: %s", res.status_code)
+            return False
+    except requests.exceptions.RequestException as err:
+        logger.info("Host is unreachable: %s", target)
+        return False
+
+
+async def fuzz(url, wordlist, param):
+    start = time.time()
+    results = {}
+    semaphore = asyncio.Semaphore(200)
+    async with httpx.AsyncClient(
+        limits=httpx.Limits(max_connections=200, max_keepalive_connections=20)
+    ) as client:
+        tasks = {}
+        logger.info("Opening wordlist...")
+        with open(wordlist) as wordlist:
+            for line in wordlist:
+                payload = line.strip()
+
+                # Ignore empty lines
+                if not payload:
+                    continue
+
+                # TODO: fix this
+                target = url.split("?")[0] + "?" + param + "=" + payload
+                results[target] = None
+
+                tasks[target] = asyncio.create_task(
+                    send_request(semaphore, client, target)
+                )
+
+        logger.info("Gathering responses...")
+        responses = await asyncio.gather(*tasks.values())
+
+        for target, response in zip(tasks.keys(), responses):
+            results[target] = response.status_code
+
+        logger.info("Got all responses!")
+
+    end = time.time()
+    elapsed_time = str(datetime.timedelta(seconds=end - start))[:-3]
+    logger.info("Fuzzing finished in %s", elapsed_time)
+    
+    return results
+
+
+async def send_request(semaphore, client, target):
+    try:
+        async with semaphore:
+            return await client.get(target)
+    except httpx.RequestError as e:
+        print(f"Request to {target} failed: {e}")
+
+
+def display_result(responses, codes):
+    for url, res_code in responses.items():
+        if res_code in codes:
+            logger.info("%s -> %s", url, res_code)
+
+
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
